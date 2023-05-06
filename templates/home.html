@@ -9,17 +9,17 @@
     <div class="container">
        <center> <h1 class="mt-5">{{ title }}</h1></center>
         <center><img src="data:img/png;base64,{{ image_url }}" class="img-fluid" alt="My Image"></center>
-        <center><p>{{ question }}</p>
+        <center><p>{{ Question }}</p>
 		<p>{{ paragraph }}?</p></center>
         <center>
-		{% for answer_text in answer_texts %}
+		{% for Answer_text in Answer_texts %}
             <form method="POST">
                 <div class="mb-2">
-                    <button name="button_name" value="button{{ loop.index0 + 1 }}" class="btn btn-primary">{{ answer_text }}</button>
+                    <button name="button_name" value="button{{ loop.index0 + 1 }}" class="btn btn-primary">{{ Answer_text }}</button>
                 </div>
             </form>
             {% if button_states['button' + (loop.index0 + 1)|string] %}
-                <p>{{ answer_text }}</p>
+                <p>{{ Answer_text }}</p>
             {% endif %}
         {% endfor %}
         </center>

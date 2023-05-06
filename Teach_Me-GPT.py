@@ -42,16 +42,16 @@ def get_img(prompt):
         
     return img_url
 
-def enforce_four_answers(answers):
-    answer_texts = [answer.split(':', 1)[-1].strip() for answer in answers]
+def enforce_four_Answers(Answers):
+    Answer_texts = [Answer.split(':', 1)[-1].strip() for Answer in Answers]
 
-    if len(answer_texts) < 4:
-        for i in range(len(answer_texts), 4):
-            answer_texts.append(f"[No action]")
-    elif len(answer_texts) > 4:
-        answer_texts = answer_texts[:4]
+    if len(Answer_texts) < 4:
+        for i in range(len(Answer_texts), 4):
+            Answer_texts.append(f"[No action]")
+    elif len(Answer_texts) > 4:
+        Answer_texts = Answer_texts[:4]
 
-    return answer_texts
+    return Answer_texts
 
 
 # Define a function to generate a chat response using the OpenAI API
@@ -62,7 +62,7 @@ def chat(inp, message_history, role="user"):
 
     # Generate a chat response using the OpenAI API
     completion = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4",
         messages=message_history
     )
 
@@ -82,14 +82,14 @@ def home():
     button_messages = {}
     button_states = {}
     paragraph = ""
-    question = []
-    answer_texts = []
+    Question = []
+    Answer_texts = []
     
-    if 'total_questions' not in session:
-        session['total_questions'] = 0
+    if 'total_Questions' not in session:
+        session['total_Questions'] = 0
 
-    if 'correct_answers' not in session:
-        session['correct_answers'] = 0
+    if 'correct_Answers' not in session:
+        session['correct_Answers'] = 0
 
     if request.method == 'GET':
         session['message_history'] = [{"role": "user", "content": preprompt},
@@ -99,45 +99,45 @@ def home():
     reply_content, message_history = chat("Begin", message_history)
 
     try:
-        paragraph, question_text = reply_content.split("?", 1)
-        question_text, _ = question_text.split("answer 1:", 1)
+        paragraph, Question_text = reply_content.split("?", 1)
+        Question_text, _ = Question_text.split("Answer 1:", 1)
         paragraph = paragraph.strip()
-        question_text = question_text.strip()
+        Question_text = Question_text.strip()
     except ValueError:
-        print("Error: '?' or 'answer 1:' not found in reply_content")
+        print("Error: '?' or 'Answer 1:' not found in reply_content")
 
 
     
-    pattern = r"question:(.*?)\n\nanswer"
+    pattern = r"Question:(.*?)\n\nAnswer"
     match = re.search(pattern, reply_content)
     
-    answers = re.findall(r"answer \d:.*", reply_content)
-    answers = enforce_four_answers(answers)
-    question = re.findall(r"question:.*", reply_content)
+    Answers = re.findall(r"Answer \d:.*", reply_content)
+    Answers = enforce_four_Answers(Answers)
+    Question = re.findall(r"Question:.*", reply_content)
     print("regex:")
-    print(answers)
+    print(Answers)
     
     if match:
-        question = match.group(0)
-        print(question)
+        Question = match.group(0)
+        print(Question)
     else:
         print("Question not found")
     
     
-    answer_texts = [answer.split(':', 1)[-1].strip() for answer in answers]
+    Answer_texts = [Answer.split(':', 1)[-1].strip() for Answer in Answers]
 
-    for i, answer_text in enumerate(answer_texts):
-        button_messages[f"button{i+1}"] = answer_text
+    for i, Answer_text in enumerate(Answer_texts):
+        button_messages[f"button{i+1}"] = Answer_text
 
 
     for button_name in button_messages.keys():
         button_states[button_name] = False
         
-        # Get the question without the answers
+        # Get the Question without the Answers
     try:
-        question = reply_content.split("? ", 1)[0].strip() + "?"
+        Question = reply_content.split("? ", 1)[0].strip() + "?"
     except IndexError:
-        print("Error: 'question' not found in reply_content")
+        print("Error: 'Question' not found in reply_content")
     
        
         
@@ -159,48 +159,48 @@ def home():
 
         reply_content, message_history = chat(message, message_history)
 
-        text = reply_content.split("answer 1")[0]
-        answers = re.findall(r"answer \d:.*", reply_content)
-        answers = enforce_four_answers(answers)
+        text = reply_content.split("Answer 1")[0]
+        Answers = re.findall(r"Answer \d:.*", reply_content)
+        Answers = enforce_four_Answers(Answers)
 
-        answer_texts = [answer.split(':', 1)[-1].strip() for answer in answers]
+        Answer_texts = [Answer.split(':', 1)[-1].strip() for Answer in Answers]
 
-        for i, answer_text in enumerate(answer_texts):
-            button_messages[f"button{i+1}"] = answer_text
+        for i, Answer_text in enumerate(Answer_texts):
+            button_messages[f"button{i+1}"] = Answer_text
         for button_name in button_messages.keys():
             button_states[button_name] = False
 
-        if button_name == "button1":  # Assuming the first answer is always the correct answer
-            session['correct_answers'] += 1
-        session['total_questions'] += 1
+        if button_name == "button1":  # Assuming the first Answer is always the correct Answer
+            session['correct_Answers'] += 1
+        session['total_Questions'] += 1
 
 
     session['message_history'] = message_history
     session['button_messages'] = button_messages
 
     try:
-        paragraph, question_text = reply_content.split("?", 1)
-        question_text, _ = question_text.split("answer 1:", 1)
+        paragraph, Question_text = reply_content.split("?", 1)
+        Question_text, _ = Question_text.split("Answer 1:", 1)
         paragraph = paragraph.strip()
-        question_text = question_text.strip()
+        Question_text = Question_text.strip()
     except ValueError:
-        print("Error: '?' or 'answer 1:' not found in reply_content")
+        print("Error: '?' or 'Answer 1:' not found in reply_content")
 
 
-    # Get the question without the answers
+    # Get the Question without the Answers
         
     print(f" {reply_content}")
     
     
-    # Store the question without the answers in the session
-    session['question'] = question
+    # Store the Question without the Answers in the session
+    session['Question'] = Question
     
     img_url = get_img(paragraph)
 
-    total_questions = session['total_questions']
-    correct_answers = session['correct_answers']
+    total_Questions = session['total_Questions']
+    correct_Answers = session['correct_Answers']
 
-    return render_template('home.html', title=title, image_url=img_url, paragraph=paragraph, question=question_text, answer_texts=answer_texts, button_messages=button_messages, button_states=button_states, total_questions=total_questions, correct_answers=correct_answers)
+    return render_template('home.html', title=title, image_url=img_url, paragraph=paragraph, Question=Question_text, Answer_texts=Answer_texts, button_messages=button_messages, button_states=button_states, total_Questions=total_Questions, correct_Answers=correct_Answers)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
