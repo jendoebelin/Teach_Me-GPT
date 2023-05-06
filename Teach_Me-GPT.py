@@ -42,17 +42,16 @@ def get_img(prompt):
         
     return img_url
 
-def enforce_four_Answers(Answers):
-    Answer_texts = [Answer.split(':', 1)[-1].strip() for Answer in Answers]
-
-    if len(Answer_texts) < 4:
-        for i in range(len(Answer_texts), 4):
-            Answer_texts.append(f"[No action]")
-    elif len(Answer_texts) > 4:
-        Answer_texts = Answer_texts[:4]
-
-    return Answer_texts
-
+def enforce_four_Answers(answers_match):
+    Answer_texts = []
+    Answer_tuples = []
+    for match in answers_match:
+        Answer_texts.append(match.group(2).strip())
+        Answer_tuples.append((match.group(1), match.group(2).strip()))
+    while len(Answer_texts) < 4:
+        Answer_texts.append("Not available")
+        Answer_tuples.append((-1, "Not available"))
+    return Answer_texts, Answer_tuples
 
 # Define a function to generate a chat response using the OpenAI API
 def chat(inp, message_history, role="user"):
@@ -62,7 +61,7 @@ def chat(inp, message_history, role="user"):
 
     # Generate a chat response using the OpenAI API
     completion = openai.ChatCompletion.create(
-        model="gpt-4",
+        model="gpt-3.5-turbo",
         messages=message_history
     )
 
@@ -84,7 +83,8 @@ def home():
     paragraph = ""
     Question = []
     Answer_texts = []
-    
+    Question_text = ""
+        
     if 'total_Questions' not in session:
         session['total_Questions'] = 0
 
@@ -100,32 +100,30 @@ def home():
 
     try:
         paragraph, Question_text = reply_content.split("?", 1)
-        Question_text, _ = Question_text.split("Answer 1:", 1)
-        paragraph = paragraph.strip()
-        Question_text = Question_text.strip()
+        Question_text = Question_text.strip() + "?"
+        if "Answer 1:" not in Question_text:
+            paragraph = reply_content.strip()
+            Question_text = ""
     except ValueError:
-        print("Error: '?' or 'Answer 1:' not found in reply_content")
+        print("Error: '?' not found in reply_content")
 
+    
+    print("reply_content:")
+    print(reply_content)
 
     
-    pattern = r"Question:(.*?)\n\nAnswer"
-    match = re.search(pattern, reply_content)
-    
-    Answers = re.findall(r"Answer \d:.*", reply_content)
-    Answers = enforce_four_Answers(Answers)
-    Question = re.findall(r"Question:.*", reply_content)
-    print("regex:")
-    print(Answers)
-    
-    if match:
-        Question = match.group(0)
-        print(Question)
+    # Find the Question and Answers in reply_content
+    question_match = re.search(r"^[A-Z].*\?$", reply_content, re.MULTILINE)
+    answers_match = re.finditer(r"Answer (\d):(.*)", reply_content)
+
+    if question_match:
+        Question = question_match.group()
     else:
         print("Question not found")
-    
-    
-    Answer_texts = [Answer.split(':', 1)[-1].strip() for Answer in Answers]
 
+    # Enforce having exactly four answers
+    Answer_texts, Answer_tuples = enforce_four_Answers(answers_match)
+      
     for i, Answer_text in enumerate(Answer_texts):
         button_messages[f"button{i+1}"] = Answer_text
 
@@ -140,8 +138,10 @@ def home():
         print("Error: 'Question' not found in reply_content")
     
        
-        
-        # Store button_messages in the session for later use
+    # Store the correct answer in the sesssion
+    session['correct_answer_number'] = Answer_tuples[0][0]
+    
+    # Store button_messages in the session for later use
     session['button_messages'] = button_messages
 
     if request.method == 'POST':
@@ -161,30 +161,33 @@ def home():
 
         text = reply_content.split("Answer 1")[0]
         Answers = re.findall(r"Answer \d:.*", reply_content)
-        Answers = enforce_four_Answers(Answers)
-
-        Answer_texts = [Answer.split(':', 1)[-1].strip() for Answer in Answers]
+        answers_match = re.finditer(r"Answer (\d):(.*)", reply_content)
+        Answer_texts, Answer_tuples = enforce_four_Answers(answers_match)
+        
 
         for i, Answer_text in enumerate(Answer_texts):
             button_messages[f"button{i+1}"] = Answer_text
         for button_name in button_messages.keys():
             button_states[button_name] = False
 
-        if button_name == "button1":  # Assuming the first Answer is always the correct Answer
+        selected_answer_number = re.search(r"\d", button_name).group()
+        if selected_answer_number == session['correct_answer_number']:
             session['correct_Answers'] += 1
+
         session['total_Questions'] += 1
+
+        try:
+            paragraph, Question_text = reply_content.split("?", 1)
+            Question_text = Question_text.strip() + "?"
+            if "Answer 1:" not in Question_text:
+                paragraph = reply_content.strip()
+                Question_text = ""
+        except ValueError:
+            print("Error: '?' not found in reply_content")
 
 
     session['message_history'] = message_history
     session['button_messages'] = button_messages
-
-    try:
-        paragraph, Question_text = reply_content.split("?", 1)
-        Question_text, _ = Question_text.split("Answer 1:", 1)
-        paragraph = paragraph.strip()
-        Question_text = Question_text.strip()
-    except ValueError:
-        print("Error: '?' or 'Answer 1:' not found in reply_content")
 
 
     # Get the Question without the Answers
